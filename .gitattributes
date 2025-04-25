@@ -1,77 +1,45 @@
-import csv
+print("=== Пошук великих інвестицій ===")
 
-print("Аналіз даних про інвестиції")
-print("--------------------------")
+# 1. Читаємо весь файл
+with open('WB_FDI_2015.csv', 'r', encoding='utf-8') as f:
+    lines = f.readlines()
 
-filename = "WB_FDI_2015.csv"  # Вкажіть правильну назву файлу
+# 2. Запитуємо число для порівняння
+while True:
+    try:
+        min_value = float(input("Введіть мінімальне значення: "))
+        break
+    except:
+        print("Потрібно ввести число!")
 
-try:
-    # Відкриваємо файл і читаємо всі рядки
-    with open(filename, 'r', encoding='utf-8-sig') as file:
-        lines = file.readlines()
+# 3. Шукаємо корисні дані
+results = []
+for line in lines:
+    parts = line.strip().split(',')  # Розділяємо по комах
     
-    # Шукаємо рядок з назвами країн
-    data_start = 0
-    for i, line in enumerate(lines):
-        if "Country Name" in line and "Country Code" in line:
-            data_start = i
-            break
-    
-    if data_start == 0:
-        print("Не знайшов рядка з назвами країн")
-        exit()
-    
-    # Отримуємо заголовки
-    headers = lines[data_start].strip().split(',')
-    
-    # Знаходимо стовпець з 2015 роком (якщо є)
-    year_col = None
-    for i, header in enumerate(headers):
-        if '2015' in header:
-            year_col = i
-            break
-    
-    if year_col is None:
-        print("Увага: не знайшов даних за 2015 рік")
-        print("Доступні роки:", [h for h in headers if any(c.isdigit() for c in h)])
-        year_col = -1  # Беремо останній стовпець
-    
-    # Обробляємо дані
-    print("\nЗнайдені дані:")
-    print("Країна\t\tЗначення")
-    print("---------------------")
-    
-    results = []
-    for line in lines[data_start+1:]:
-        if line.strip() == "":
+    # Шукаємо перше числове значення в рядку
+    for part in parts:
+        part = part.strip(' "\'')  # Видаляємо зайві символи
+        try:
+            value = float(part)
+            # Беремо першу частину як назву країни
+            country = parts[0].strip(' "\'')
+            if value > min_value:
+                results.append((country, value))
+            break  # Знайшли число - переходимо до наступного рядка
+        except ValueError:
             continue
-            
-        parts = line.strip().split(',')
-        if len(parts) > max(year_col, 0):
-            country = parts[0].strip('"')
-            value = parts[year_col].strip('"') if year_col > 0 else parts[-1].strip('"')
-            
-            if value and value != '""':
-                print(f"{country[:15]}\t{value}")
-                try:
-                    results.append((country, float(value)))
-                except:
-                    continue
-    
-    if not results:
-        print("\nНе знайшов числових даних для аналізу")
-    else:
-        # Знаходимо мінімум і максимум
-        min_country, min_val = min(results, key=lambda x: x[1])
-        max_country, max_val = max(results, key=lambda x: x[1])
-        
-        print("\nРезультати:")
-        print(f"Найменші інвестиції: {min_country} - {min_val:,.2f} $")
-        print(f"Найбільші інвестиції: {max_country} - {max_val:,.2f} $")
 
-except FileNotFoundError:
-    print(f"Файл {filename} не знайдено!")
-except Exception as e:
-    print(f"Сталася помилка: {e}")
+# 4. Виводимо результати
+if not results:
+    print(f"Не знайдено значень більших за {min_value}")
+else:
+    print("\nЗнайдені результати:")
+    with open('results.csv', 'w', encoding='utf-8') as out:
+        out.write("Країна;Значення\n")
+        for country, value in results:
+            print(f"{country}: {value}")
+            out.write(f"{country};{value}\n")
+    print("\nРезультати збережено у файлі results.csv")
 
-input("\nНатисніть Enter для виходу...")
+input("\nНатисніть Enter для виходу")
